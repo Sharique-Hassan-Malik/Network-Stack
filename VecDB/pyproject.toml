@@ -1,0 +1,21 @@
+[build-system]
+requires      = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name        = "vecdb"
+version     = "1.0.0"
+description = "Vector similarity search engine with HNSW indexing from scratch"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-cov"]
+
+[project.scripts]
+vecdb = "scripts.vecdb_cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

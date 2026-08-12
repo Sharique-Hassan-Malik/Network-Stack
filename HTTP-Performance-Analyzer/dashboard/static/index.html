@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTTP Performance Analyzer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --h1-color:  #f85149;
+      --h2-color:  #3fb950;
+      --h3-color:  #58a6ff;
+      --accent:    #d29922;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; }
+    .app { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header h1 span { color: var(--h3-color); }
+    .status-pill { font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg2); }
+    .status-pill.running { border-color: var(--accent); color: var(--accent); animation: blink 1.5s infinite; }
+    .status-pill.complete { border-color: var(--h2-color); color: var(--h2-color); }
+    @keyframes blink { 50% { opacity: 0.5; } }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .panel-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .scenario-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .tab { padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg2); color: var(--muted); cursor: pointer; font-size: 12px; }
+    .tab.active { background: var(--bg3); color: var(--text); border-color: var(--h3-color); }
+    .waterfall-wrap { overflow-x: auto; }
+    .waterfall-row { display: flex; align-items: center; margin-bottom: 4px; height: 22px; }
+    .waterfall-label { width: 60px; font-size: 10px; color: var(--muted); text-align: right; padding-right: 8px; flex-shrink: 0; }
+    .waterfall-track { flex: 1; position: relative; height: 14px; background: var(--bg3); border-radius: 2px; }
+    .waterfall-bar { position: absolute; height: 100%; border-radius: 2px; }
+    .waterfall-ttfb { opacity: 0.5; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { text-align: left; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    tbody td { padding: 6px 8px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+    tbody tr:hover td { background: var(--bg3); }
+    .proto-h1 { color: var(--h1-color); font-weight: 600; }
+    .proto-h2 { color: var(--h2-color); font-weight: 600; }
+    .proto-h3 { color: var(--h3-color); font-weight: 600; }
+    .speedup { color: var(--h2-color); font-size: 11px; }
+    .no-data { color: var(--muted); text-align: center; padding: 40px; font-size: 12px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .proto-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .proto-badge.h1 { background: rgba(248,81,73,0.15); color: var(--h1-color); }
+    .proto-badge.h2 { background: rgba(63,185,80,0.15); color: var(--h2-color); }
+    .proto-badge.h3 { background: rgba(88,166,255,0.15); color: var(--h3-color); }
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; font-size: 12px; }
+    .btn:hover { border-color: var(--h3-color); }
+    .instructions { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .instructions code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-family: monospace; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useCallback } = React;
+const {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, Cell
+} = Recharts;
+
+const COLORS = { "HTTP/1.1": "#f85149", "HTTP/2": "#3fb950", "HTTP/3": "#58a6ff" };
+const PROTO_CLS = { "HTTP/1.1": "h1", "HTTP/2": "h2", "HTTP/3": "h3" };
+
+function ProtoBadge({ proto }) {
+  return React.createElement("span", { className: `proto-badge ${PROTO_CLS[proto] || "h1"}` }, proto);
+}
+
+function LatencyChart({ data, scenario }) {
+  const filtered = data.filter(d => d.scenario === scenario);
+  const chartData = [
+    { name: "TTFB p50", ...Object.fromEntries(filtered.map(d => [d.protocol, d.ttfb_p50_ms])) },
+    { name: "p50",      ...Object.fromEntries(filtered.map(d => [d.protocol, d.latency_p50_ms])) },
+    { name: "p95",      ...Object.fromEntries(filtered.map(d => [d.protocol, d.latency_p95_ms])) },
+    { name: "p99",      ...Object.fromEntries(filtered.map(d => [d.protocol, d.latency_p99_ms])) },
+  ];
+  const protos = filtered.map(d => d.protocol);
+  return React.createElement(ResponsiveContainer, { width: "100%", height: 200 },
+    React.createElement(BarChart, { data: chartData, margin: { top: 4, right: 8, bottom: 0, left: -20 } },
+      React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#30363d" }),
+      React.createElement(XAxis, { dataKey: "name", tick: { fill: "#8b949e", fontSize: 10 } }),
+      React.createElement(YAxis, { tick: { fill: "#8b949e", fontSize: 10 }, unit: "ms" }),
+      React.createElement(Tooltip, {
+        contentStyle: { background: "#161b22", border: "1px solid #30363d", borderRadius: 6 },
+        itemStyle: { color: "#e6edf3" },
+        formatter: v => [`${v?.toFixed(2)} ms`],
+      }),
+      ...protos.map(p => React.createElement(Bar, { key: p, dataKey: p, fill: COLORS[p], radius: [3,3,0,0] }))
+    )
+  );
+}
+
+function ThroughputChart({ data, scenario }) {
+  const filtered = data.filter(d => d.scenario === scenario);
+  const chartData = filtered.map(d => ({ name: d.protocol, rps: d.rps, fill: COLORS[d.protocol] }));
+  return React.createElement(ResponsiveContainer, { width: "100%", height: 200 },
+    React.createElement(BarChart, { data: chartData, margin: { top: 4, right: 8, bottom: 0, left: -20 } },
+      React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#30363d" }),
+      React.createElement(XAxis, { dataKey: "name", tick: { fill: "#8b949e", fontSize: 11 } }),
+      React.createElement(YAxis, { tick: { fill: "#8b949e", fontSize: 10 }, unit: " rps" }),
+      React.createElement(Tooltip, {
+        contentStyle: { background: "#161b22", border: "1px solid #30363d", borderRadius: 6 },
+        itemStyle: { color: "#e6edf3" },
+        formatter: v => [`${v?.toFixed(1)} req/s`],
+      }),
+      React.createElement(Bar, { dataKey: "rps", radius: [4,4,0,0] },
+        ...chartData.map((d, i) => React.createElement(Cell, { key: i, fill: d.fill }))
+      )
+    )
+  );
+}
+
+function Waterfall({ result }) {
+  if (!result || !result.waterfall || result.waterfall.length === 0) {
+    return React.createElement("div", { className: "no-data" }, "No waterfall data");
+  }
+  const maxEnd = Math.max(...result.waterfall.map(r => (r.start_ms || 0) + (r.total_ms || 0)));
+  const scale  = 100 / (maxEnd || 1);
+  const color  = COLORS[result.protocol] || "#8b949e";
+  const rows   = result.waterfall.slice(0, 30);  // cap at 30 for display
+
+  return React.createElement("div", { className: "waterfall-wrap" },
+    rows.map(r =>
+      React.createElement("div", { key: r.id, className: "waterfall-row" },
+        React.createElement("div", { className: "waterfall-label" }, `#${r.id}`),
+        React.createElement("div", { className: "waterfall-track" },
+          React.createElement("div", {
+            className: "waterfall-bar waterfall-ttfb",
+            style: {
+              left:     `${(r.start_ms || 0) * scale}%`,
+              width:    `${Math.max((r.ttfb_ms || 0) * scale, 0.5)}%`,
+              background: color,
+            },
+          }),
+          React.createElement("div", {
+            className: "waterfall-bar",
+            style: {
+              left:     `${((r.start_ms || 0) + (r.ttfb_ms || 0)) * scale}%`,
+              width:    `${Math.max(((r.total_ms || 0) - (r.ttfb_ms || 0)) * scale, 0.5)}%`,
+              background: color,
+              opacity: 0.85,
+            },
+          })
+        )
+      )
+    ),
+    React.createElement("div", { style: { fontSize: 10, color: "#8b949e", marginTop: 6 } },
+      "Light = TTFB  |  Dark = transfer  |  Total window: ",
+      React.createElement("strong", null, `${maxEnd.toFixed(1)} ms`)
+    )
+  );
+}
+
+function SummaryTable({ data }) {
+  const scenarios = [...new Set(data.map(d => d.scenario))];
+  return React.createElement("table", null,
+    React.createElement("thead", null,
+      React.createElement("tr", null,
+        ["Scenario", "Protocol", "Wall ms", "RPS", "TTFB p50", "p50", "p95", "p99", "Errors"].map(h =>
+          React.createElement("th", { key: h }, h)
+        )
+      )
+    ),
+    React.createElement("tbody", null,
+      data.map((r, i) =>
+        React.createElement("tr", { key: i },
+          React.createElement("td", null, r.scenario),
+          React.createElement("td", null, React.createElement(ProtoBadge, { proto: r.protocol })),
+          React.createElement("td", null, (r.wall_time * 1000).toFixed(1)),
+          React.createElement("td", null, r.rps.toFixed(1)),
+          React.createElement("td", null, r.ttfb_p50_ms),
+          React.createElement("td", null, r.latency_p50_ms),
+          React.createElement("td", null, r.latency_p95_ms),
+          React.createElement("td", null, r.latency_p99_ms),
+          React.createElement("td", null, r.errors || "—"),
+        )
+      )
+    )
+  );
+}
+
+function Instructions() {
+  return React.createElement("div", { className: "panel" },
+    React.createElement("div", { className: "panel-title" }, "Getting Started"),
+    React.createElement("div", { className: "instructions" },
+      React.createElement("p", null, "Run the benchmark from the project directory:"),
+      React.createElement("br"),
+      React.createElement("code", null, "python scripts/run_benchmark.py"),
+      React.createElement("br"), React.createElement("br"),
+      React.createElement("p", null, "Results will appear here automatically once the benchmark completes."),
+      React.createElement("br"),
+      React.createElement("p", null, "Options:"),
+      React.createElement("br"),
+      React.createElement("code", null, "python scripts/run_benchmark.py --n-concurrent 30 --no-dashboard"),
+    )
+  );
+}
+
+function App() {
+  const [state,      setState]    = useState({ status: "idle", results: [], summary: [] });
+  const [scenario,   setScenario] = useState(null);
+  const [activeTab,  setActiveTab] = useState("charts");
+
+  const poll = useCallback(() => {
+    fetch("/api/state")
+      .then(r => r.json())
+      .then(d => {
+        setState(d);
+        if (!scenario && d.results && d.results.length > 0) {
+          const first = d.results[0]?.scenario;
+          if (first) setScenario(first);
+        }
+      })
+      .catch(() => {});
+  }, [scenario]);
+
+  useEffect(() => {
+    poll();
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [poll]);
+
+  const scenarios = [...new Set(state.results.map(r => r.scenario))];
+  const selected  = state.results.filter(r => r.scenario === scenario);
+
+  const statusClass = state.status === "running" ? "running" : state.status === "complete" ? "complete" : "";
+
+  return React.createElement("div", { className: "app" },
+    React.createElement("header", null,
+      React.createElement("h1", null,
+        React.createElement("span", null, "⚡ "),
+        "HTTP Performance Analyzer"
+      ),
+      React.createElement("div", null,
+        React.createElement("span", { className: `status-pill ${statusClass}` },
+          state.status === "running" ? "● Running…" :
+          state.status === "complete" ? "✓ Complete" : "Idle"
+        ),
+        state.last_run && React.createElement("span", { style: { marginLeft: 10, color: "#8b949e", fontSize: 11 } },
+          `Last run: ${new Date(state.last_run).toLocaleTimeString()}`
+        )
+      )
+    ),
+
+    state.results.length === 0 ? React.createElement(Instructions) : React.createElement("div", null,
+
+      React.createElement("div", { className: "scenario-tabs" },
+        scenarios.map(s =>
+          React.createElement("button", { key: s, className: `tab ${s === scenario ? "active" : ""}`, onClick: () => setScenario(s) }, s)
+        )
+      ),
+
+      React.createElement("div", { className: "toolbar" },
+        ["charts", "waterfall", "table"].map(t =>
+          React.createElement("button", { key: t, className: `btn ${activeTab === t ? "active" : ""}`, onClick: () => setActiveTab(t) }, t.charAt(0).toUpperCase() + t.slice(1))
+        ),
+        React.createElement("div", { className: "legend" },
+          Object.entries(COLORS).map(([p, c]) =>
+            React.createElement("div", { key: p, className: "legend-item" },
+              React.createElement("div", { className: "legend-dot", style: { background: c } }),
+              p
+            )
+          )
+        )
+      ),
+
+      activeTab === "charts" && React.createElement("div", { className: "grid grid-2" },
+        React.createElement("div", { className: "panel" },
+          React.createElement("div", { className: "panel-title" }, `Latency — ${scenario}`),
+          React.createElement(LatencyChart, { data: state.results, scenario })
+        ),
+        React.createElement("div", { className: "panel" },
+          React.createElement("div", { className: "panel-title" }, `Throughput — ${scenario}`),
+          React.createElement(ThroughputChart, { data: state.results, scenario })
+        )
+      ),
+
+      activeTab === "waterfall" && React.createElement("div", { className: "grid grid-3" },
+        ["HTTP/1.1", "HTTP/2", "HTTP/3"].map(proto => {
+          const r = selected.find(x => x.protocol === proto);
+          return React.createElement("div", { key: proto, className: "panel" },
+            React.createElement("div", { className: "panel-title" },
+              React.createElement(ProtoBadge, { proto }), ` — waterfall`
+            ),
+            r ? React.createElement(Waterfall, { result: r })
+              : React.createElement("div", { className: "no-data" }, "Not available")
+          );
+        })
+      ),
+
+      activeTab === "table" && React.createElement("div", { className: "panel" },
+        React.createElement("div", { className: "panel-title" }, "All Results"),
+        React.createElement(SummaryTable, { data: state.results })
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>

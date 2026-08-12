@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Rust
+target/
+
+# JVM / Android / Gradle
+build/
+.gradle/
+local.properties
+*.apk
+*.class
+
+# C / build artifacts
+*.o
+*.elf
+*.hex
+*.bin
+!**/assets/*.bin
+
+# generated data / large artifacts
+*.npz
+.bench/
+.run/
+.results/
+.state/
+node_modules/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
