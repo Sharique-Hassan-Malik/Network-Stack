@@ -1,4 +1,4 @@
-# raft-kv — Distributed Key-Value Store
+# Raft-KV — Distributed Key-Value Store
 
 A Raft consensus implementation paired with a linearisable key-value store.
 Implements leader election, log replication, commit index advancement and

@@ -1,4 +1,4 @@
-# vecdb — Vector Database from Scratch
+# VecDB — Vector Database from Scratch
 
 A vector similarity search engine built entirely from first principles.
 The core is a hand-implemented Hierarchical Navigable Small World (HNSW)
