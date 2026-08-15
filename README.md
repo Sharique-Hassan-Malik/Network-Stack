@@ -12,9 +12,7 @@ A collection of 8 self-contained projects. Each lives in its own subdirectory wi
 | [`HTTP-Performance-Analyzer`](./HTTP-Performance-Analyzer) | Benchmarks the same ASGI application across all three HTTP protocol generations and visualises the differences in latency, throughput, multiplexing… |
 | [`Network-Topology-Mapper`](./Network-Topology-Mapper) | Active network discovery tool that maps an entire subnet, infers its topology through traceroute and renders an interactive force-directed graph in… |
 | [`QUIC-Impl`](./QUIC-Impl) | A subset of the QUIC transport protocol (RFC 9000) implemented from scratch in Python over UDP. |
-| [`Raft-KV`](./Raft-KV) | A Raft consensus implementation paired with a linearisable key-value store. |
 | [`SDN-Controller`](./SDN-Controller) | An OpenFlow 1.3 SDN controller managing a virtual network — implementing load balancing, traffic shaping and automatic failover with all control-pl… |
-| [`Taskqueue`](./Taskqueue) | A Celery-like distributed task queue built entirely from scratch — custom TCP broker protocol, worker process pool, SQLite result backend and a web… |
 | [`VecDB`](./VecDB) | A vector similarity search engine built entirely from first principles. |
 
 ## Repository layout
