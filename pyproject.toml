@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netcore"
+version = "1.0.0"
+description = "Transports, analysers and the RTT/congestion/measurement core they share"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+# The core and both transports run on the standard library alone.
+dependencies = []
+
+[project.optional-dependencies]
+bench = ["httpx>=0.25", "aioquic>=0.9", "h2>=4"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+net = "netcore.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["netcore*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "modules"]
+python_files = ["test_*.py"]
+# importlib import mode: several modules ship their own `tests` package, and
+# the default prepend mode resolves them all to one top-level name, so
+# collecting them in a single run collides. Each module's own
+# `pytest` still works unchanged from its own folder.
+addopts = "-q --import-mode=importlib"

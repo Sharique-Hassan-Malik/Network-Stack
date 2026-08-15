@@ -1,0 +1,6 @@
+# netcore, the QUIC implementation, the reliable transport, the SDN controller,
+# the topology mapper and the BGP analyser all run on the standard library.
+# Only the HTTP benchmark needs clients for the protocols it measures.
+httpx>=0.25
+aioquic>=0.9
+pytest>=7
