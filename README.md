@@ -58,10 +58,10 @@ RecoveryManager(congestion="bbr")     # or "cubic", or an instance you built
 
 **One measurement type** ([`netcore/measure.py`](netcore/measure.py)). Six tools
 measuring latency six ways, so their numbers could not go in one table. Folding
-them onto one definition also fixed a real bug: the HTTP benchmark computed
-percentiles by index arithmetic that returned the *ninth* value of ten as the
-p99, and the fifth as the p50 — it under-reported exactly the tail a benchmark
-exists to report.
+them onto one definition settles what a percentile means: index arithmetic
+over ten samples returns the *ninth* value as the p99 and the fifth as the p50,
+under-reporting exactly the tail a benchmark exists to report. The shared
+function interpolates instead.
 
 **What is deliberately not shared.** The topology mapper's graph is IP-level,
 discovered by traceroute, with RTT-weighted edges. The SDN controller's is

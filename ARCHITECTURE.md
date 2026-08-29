@@ -50,11 +50,11 @@ injectable, because their state machines advance with elapsed time and cannot
 be stepped by a simulation that does not move the wall clock.
 
 **Percentiles.** Six tools measuring latency six ways. Consolidating them onto
-`netcore/measure.py` also fixed a bug: the HTTP benchmark computed percentiles
-as `sorted[int(n * pct / 100) - 1]`, which for ten requests returned the ninth
-value as the p99 and the fifth as the p50. It under-reported precisely the tail
-a benchmark exists to report. The shared function interpolates, which is what
-NumPy and most tooling do, and the choice is written down in one place.
+`netcore/measure.py` settles the definition. Index arithmetic —
+`sorted[int(n * pct / 100) - 1]` — returns, for ten requests, the ninth value as
+the p99 and the fifth as the p50, under-reporting precisely the tail a benchmark
+exists to report. The shared function interpolates, which is what NumPy and most
+tooling do, and the choice is written down in one place.
 
 `Measurement` keeps the raw samples rather than only a summary, because a p99
 cannot be recovered from a mean and merging two summaries is not the same as
