@@ -93,6 +93,7 @@ DELEGATED = {
     "bench": ("http-benchmark", "scripts.run_benchmark"),
     "map": ("topology-mapper", "map"),
     "bgp": ("bgp-analyzer", "bgp_analyzer.cli"),
+    "dns": ("dns", "tools.resolve"),
 }
 
 
@@ -114,7 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("modules", help="the six modules and their own CLIs")
+    sub.add_parser("modules", help="the seven modules and their own CLIs")
 
     congestion = sub.add_parser(
         "congestion", help="compare congestion controllers on one bottleneck"
@@ -130,7 +131,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     for name, help_text in (("bench", "HTTP/1.1 vs /2 vs /3 benchmark"),
                             ("map", "map a network"),
-                            ("bgp", "analyse BGP updates")):
+                            ("bgp", "analyse BGP updates"),
+                            ("dns", "resolve a name from the root servers")):
         sub.add_parser(name, help=help_text, add_help=False)
 
     return parser

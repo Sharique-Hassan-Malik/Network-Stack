@@ -1,9 +1,9 @@
-"""Cross-module tests — what is only true because these six share a core.
+"""Cross-module tests — the guarantees that come from sharing a core.
 
 Each module's own behaviour is tested in its own folder. What is tested here is
 that the shared estimator and controllers behave identically for every consumer,
-that the merge did not change the protocols' numbers, and that each module still
-runs from its own directory.
+that the protocols' numbers are unchanged by going through them, and that each
+module still runs from its own directory.
 """
 
 from __future__ import annotations

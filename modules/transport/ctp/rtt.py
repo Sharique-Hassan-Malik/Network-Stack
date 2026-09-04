@@ -1,9 +1,9 @@
 """RTT estimation for this transport — the shared implementation.
 
-RFC 6298 used to be implemented here and again, separately, inside the QUIC
-module's recovery manager, with the same constants and different framing. Both
-now use `netcore.rtt`. Re-exported so `from ctp.rtt import RTTEstimator` keeps
-working.
+RFC 6298 is one algorithm, and both this transport and the QUIC module's
+recovery manager need it. It lives in `netcore.rtt` and is re-exported here, so
+`from ctp.rtt import RTTEstimator` resolves to the shared estimator rather than
+a second copy with the same constants and different framing.
 """
 
 from __future__ import annotations

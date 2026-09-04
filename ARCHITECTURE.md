@@ -39,8 +39,8 @@ behind one three-method interface, and QUIC's constructor takes the name:
 RecoveryManager(congestion="bbr")
 ```
 
-That is the merge paying for itself rather than only deduplicating — QUIC
-gained two algorithms it never had.
+Sharing the controllers is not only deduplication: QUIC gets two algorithms it
+would otherwise not have.
 
 Two things had to change for it to be real. `build()` filters options by the
 controller's signature, because only the time-driven algorithms take a `clock`
@@ -49,8 +49,8 @@ controller accepts is still an error. And BBR's and CUBIC's clocks became
 injectable, because their state machines advance with elapsed time and cannot
 be stepped by a simulation that does not move the wall clock.
 
-**Percentiles.** Six tools measuring latency six ways. Consolidating them onto
-`netcore/measure.py` settles the definition. Index arithmetic —
+**Percentiles.** Six modules measure latency, and `netcore/measure.py` settles
+what a percentile means for all of them. Index arithmetic —
 `sorted[int(n * pct / 100) - 1]` — returns, for ten requests, the ninth value as
 the p99 and the fifth as the p50, under-reporting precisely the tail a benchmark
 exists to report. The shared function interpolates, which is what NumPy and most
@@ -95,11 +95,11 @@ package and runs from that directory alone. `netcore` is stdlib-only, and each
 module reaches it with a three-line path bootstrap, so importing the shared
 estimator costs a standalone module no dependencies.
 
-`ctp.rtt` and `ctp.congestion` are now thin re-export modules rather than
-implementations. Keeping the names means every existing import and every test
-in that module continued to work through the move, which is how the merge was
-verified: 38 transport tests and 77 QUIC tests passed before and after, on the
-same numbers.
+`ctp.rtt` and `ctp.congestion` are thin re-export modules rather than
+implementations, so `from ctp.rtt import RTTEstimator` resolves to the shared
+type. That keeps each module's own suite meaningful: the 38 transport tests and
+77 QUIC tests exercise the shared estimator and controllers through their own
+import paths, not private copies that happen to agree.
 
 ## Test layout
 

@@ -1,9 +1,9 @@
 # Network Stack
 
 Two transports built from the packet up, a protocol benchmark, a topology
-mapper, an SDN controller and a BGP hijack analyser — sharing one RTT
-estimator, one set of congestion controllers, and one way of reporting a
-measurement.
+mapper, an SDN controller, an iterative DNS resolver and a BGP hijack analyser
+— sharing one RTT estimator, one set of congestion controllers, and one way of
+reporting a measurement.
 
 ```
 net modules                       # what is here, and how to run each alone
@@ -11,6 +11,7 @@ net congestion --loss 0.01        # Reno vs CUBIC vs BBR on one bottleneck
 net bench https://example.com     # HTTP/1.1 vs /2 vs /3
 net map 192.0.2.0/24              # traceroute, scan, fingerprint, graph
 net bgp updates.mrt               # origin hijacks, sub-prefix hijacks, bogons
+net dns --trace example.com       # resolve from the root servers down
 ```
 
 ```
@@ -25,7 +26,7 @@ $ net congestion --loss 0.01 --rounds 200
   bbr            6.96 Mb/s     71.0 ms         70%       89,598
 ```
 
-## The six modules
+## The seven modules
 
 | Module | What it is |
 |---|---|
@@ -34,6 +35,7 @@ $ net congestion --loss 0.01 --rounds 200
 | [`http-benchmark`](modules/http-benchmark) | HTTP/1.1, /2 and /3 measured against the same server under concurrency, with a dashboard. |
 | [`topology-mapper`](modules/topology-mapper) | Traceroute, port scanning and OS fingerprinting assembled into a graph. |
 | [`sdn-controller`](modules/sdn-controller) | An OpenFlow controller: MAC learning, shortest-path forwarding, load balancing, failover. |
+| [`dns`](modules/dns) | An iterative resolver: walks the delegation chain from the root servers, with a TTL-honouring cache. |
 | [`bgp-analyzer`](modules/bgp-analyzer) | Routing-update analysis: origin hijacks, sub-prefix hijacks, bogons, AS-path anomalies. |
 
 ## What they share, and why
@@ -104,3 +106,20 @@ pytest modules/quic           # one module
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+## Scope and responsible use
+
+Two of these modules reach networks other than your own: `topology-mapper`
+performs traceroute, port scanning and OS fingerprinting, and `http-benchmark`
+generates concurrent load against a server.
+
+- **Run them only against hosts you own or are explicitly authorised to test.**
+  Unauthorised scanning and load generation are unlawful in many jurisdictions,
+  regardless of intent.
+- The defaults are deliberately inert: the benchmark host defaults to
+  `127.0.0.1`, and the examples use ranges and names reserved for documentation
+  — `192.0.2.0/24` (RFC 5737) and `example.com` (RFC 2606).
+- `bgp-analyzer` reads MRT files you supply; it neither speaks BGP nor
+  announces routes.
+- Provided **as is**, under the [LICENSE](LICENSE). You are responsible for
+  having permission before pointing any of this at a network.

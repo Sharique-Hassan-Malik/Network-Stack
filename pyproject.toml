@@ -30,3 +30,6 @@ python_files = ["test_*.py"]
 # collecting them in a single run collides. Each module's own
 # `pytest` still works unchanged from its own folder.
 addopts = "-q --import-mode=importlib"
+markers = [
+    "slow: reaches the live network (the DNS resolver's walk from the root, and\n    the comparison against the system resolver)",
+]

@@ -72,6 +72,14 @@ MANIFEST: tuple[ModuleSpec, ...] = (
         standalone="python tools/run_controller.py",
     ),
     ModuleSpec(
+        name="dns",
+        title="Iterative DNS resolver",
+        summary="Resolves from the root servers down rather than asking a "
+                "recursive resolver, with a TTL-honouring cache.",
+        package="dnskit",
+        standalone="python tools/resolve.py --trace example.com",
+    ),
+    ModuleSpec(
         name="bgp-analyzer",
         title="BGP hijack analyzer",
         summary="Parses routing updates and detects origin hijacks, sub-prefix "
