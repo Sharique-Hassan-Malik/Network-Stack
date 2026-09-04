@@ -35,7 +35,7 @@ def generate() -> tuple[Path, Path]:
         x509.NameAttribute(NameOID.COMMON_NAME,              "localhost"),
     ])
 
-    now  = datetime.datetime.utcnow()
+    now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)

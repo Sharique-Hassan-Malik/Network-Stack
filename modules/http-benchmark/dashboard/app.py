@@ -40,7 +40,7 @@ def update_state(results_json: list[dict], summary: list[dict]) -> None:
     _state["status"]   = "complete"
     _state["results"]  = results_json
     _state["summary"]  = summary
-    _state["last_run"] = datetime.datetime.utcnow().isoformat()
+    _state["last_run"] = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat()
 
 
 def set_status(status: str) -> None:

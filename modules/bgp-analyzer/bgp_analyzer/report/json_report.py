@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def to_dict(result: "AnalysisResult") -> dict:
     return {
-        "generated": datetime.datetime.utcnow().isoformat() + "Z",
+        "generated": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "summary": {
             "baseline_prefixes":      result.baseline_prefixes,
             "baseline_routes":        result.baseline_routes,
